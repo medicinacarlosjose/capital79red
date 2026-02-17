@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CAPITAL 79 — Ultra Wealth Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="app.css">
+
+<style>
+
+/* ===== TÍTULO ANIMADO SOFISTICADO ===== */
+.app-title{
+  background: linear-gradient(270deg,#ffffff,#c9a227,#ffffff,#d4af37);
+  background-size:600% 600%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:luxuryFlow 8s ease infinite;
+  letter-spacing:2px;
+}
+
+@keyframes luxuryFlow{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+/* ===== FOOTER RESPONSIVO FIXO ===== */
+.footer-controls{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  padding:20px 10px;
+  text-align:center;
+}
+
+.footer-controls .btn-minimal{
+  flex:1 1 150px;
+  max-width:220px;
+}
+
+/* ===== LEMBRETES ===== */
+#reminderModal .modal-content{
+  max-height:80vh;
+  overflow-y:auto;
+}
+
+.reminder-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:8px 0;
+  padding:8px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.reminder-delete{
+  cursor:pointer;
+  font-size:14px;
+  opacity:0.6;
+}
+
+.reminder-delete:hover{
+  opacity:1;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- PIN LOCK -->
+<div id="pinLock">
+  <div class="modal-content" style="text-align:center">
+    <h2>🔒 Acesso Restrito</h2>
+    <input id="pinInput" type="password" maxlength="4" placeholder="••••">
+    <div style="margin-top:15px;">
+      <button class="btn-minimal" onclick="confirmPin()">Entrar</button>
+    </div>
+    <div style="margin-top:20px;font-size:12px;opacity:0.4;">
+      Carlos França
+    </div>
+  </div>
+</div>
+
+<header class="top-bar hidden" id="mainApp">
+
+  <div>
+    <h1 class="app-title">CAPITAL 79</h1>
+    <div class="signature-tag">ULTRA WEALTH MANAGEMENT</div>
+  </div>
+
+  <div class="summary">
+
+    <div>
+      <div class="metric-label">Receita</div>
+      <input type="number" id="totalIncome"
+        placeholder="0"
+        oninput="updateTop(); persist();">
+    </div>
+
+    <div>
+      <div class="metric-label">Despesa (Mês Atual)</div>
+      <div class="metric-value" id="currentExpense">R$ 0,00</div>
+    </div>
+
+    <div>
+      <div class="metric-label">Resultado</div>
+      <div class="metric-value" id="balance">R$ 0,00</div>
+    </div>
+
+    <button class="btn-minimal" onclick="toggleTheme()">🌗</button>
+    <button class="btn-minimal" onclick="openModal()">＋ Lançamento</button>
+
+  </div>
+</header>
+
+<main id="monthsContainer" class="hidden"></main>
+
+<div class="footer-controls hidden" id="footerControls">
+
+  <button class="btn-minimal" onclick="toggleFiveYears()">+ Meses (5 anos)</button>
+  <button class="btn-minimal" onclick="exportData()">Exportar</button>
+  <button class="btn-minimal" onclick="triggerImport()">Importar</button>
+  <button class="btn-minimal" onclick="generateAnnualPDF()">Gerar PDF Anual</button>
+  <button class="btn-minimal" onclick="openReminderModal()">📒 Lembretes</button>
+
+  <input type="file"
+         id="hiddenImport"
+         accept=".json"
+         onchange="importData(event)"
+         style="display:none;">
+</div>
+
+<!-- MODAL LANÇAMENTO (inalterado) -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Novo Lançamento</h2>
+    <input id="expenseValue" type="number" placeholder="Valor">
+    <select id="expenseType" onchange="handleType()">
+      <option value="vista">À vista</option>
+      <option value="parcelado">Parcelado</option>
+      <option value="recorrente">Recorrente</option>
+    </select>
+    <select id="expenseCard" class="hidden">
+      <option>Visa</option>
+      <option>Master</option>
+      <option>NuBank</option>
+      <option>Outro</option>
+    </select>
+    <input id="otherCard" class="hidden" placeholder="Outro cartão">
+    <input id="expenseInstallments" class="hidden" type="number" placeholder="Parcelas">
+    <select id="expensePayer" onchange="handlePayer()">
+      <option>Carlos França</option>
+      <option>Outro</option>
+    </select>
+    <input id="otherPayer" class="hidden" placeholder="Nome">
+    <select id="expenseMonth">
+      <option>JAN</option><option>FEV</option><option>MAR</option>
+      <option>ABR</option><option>MAI</option><option>JUN</option>
+      <option>JUL</option><option>AGO</option><option>SET</option>
+      <option>OUT</option><option>NOV</option><option>DEZ</option>
+    </select>
+    <div style="margin-top:15px;">
+      <button class="btn-minimal" onclick="closeModal()">Cancelar</button>
+      <button class="btn-minimal" onclick="saveExpense()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LEMBRETES -->
+<div id="reminderModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>📒 Lembretes de Empréstimos</h2>
+
+    <input id="reminderName" placeholder="Nome">
+    <input id="reminderValue" type="number" placeholder="Valor">
+
+    <div style="margin-top:10px;">
+      <button class="btn-minimal" onclick="addReminder()">Adicionar</button>
+      <button class="btn-minimal" onclick="closeReminderModal()">Fechar</button>
+    </div>
+
+    <div id="reminderList" style="margin-top:15px;"></div>
+  </div>
+</div>
+
+<script src="styles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+
+/* ===== LEMBRETES FUNCIONALIDADE ===== */
+let reminders = JSON.parse(localStorage.getItem("capital79_reminders") || "[]");
+
+function openReminderModal(){
+  document.getElementById("reminderModal").classList.remove("hidden");
+  renderReminders();
+}
+
+function closeReminderModal(){
+  document.getElementById("reminderModal").classList.add("hidden");
+}
+
+function addReminder(){
+  const name = document.getElementById("reminderName").value;
+  const value = parseFloat(document.getElementById("reminderValue").value);
+
+  if(!name || !value) return;
+
+  reminders.push({name,value});
+  localStorage.setItem("capital79_reminders",JSON.stringify(reminders));
+
+  document.getElementById("reminderName").value="";
+  document.getElementById("reminderValue").value="";
+  renderReminders();
+}
+
+function deleteReminder(index){
+  reminders.splice(index,1);
+  localStorage.setItem("capital79_reminders",JSON.stringify(reminders));
+  renderReminders();
+}
+
+function renderReminders(){
+  const list=document.getElementById("reminderList");
+  list.innerHTML="";
+  reminders.forEach((r,i)=>{
+    const div=document.createElement("div");
+    div.className="reminder-item";
+    div.innerHTML=`
+      <span>${r.name} — R$ ${r.value.toFixed(2)}</span>
+      <span class="reminder-delete" onclick="deleteReminder(${i})">🗑</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+</script>
+
+</body>
+</html>
